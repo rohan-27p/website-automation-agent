@@ -2,37 +2,75 @@
 
 ## Goal
 
-The agent automates a website form without manual intervention. It is intentionally small so each browser action can be explained during the viva.
+Take a natural-language task and complete it in a real browser autonomously, using
+an LLM that reasons and acts in a loop. A web dashboard shows the live browser and
+every decision. It is a mini-version of Browser Use / BrowserMind.
+
+## The agent loop (ReAct)
+
+Each step:
+
+1. **Observe** — `BrowserController.observe()` runs Set-of-Marks in the page:
+   number every visible interactive element, draw a numbered overlay, and produce
+   (a) a text list for the model and (b) a screenshot for the human.
+2. **Reason + Act** — the text observation + history go to `qwen3-coder` via the
+   OpenAI-compatible Ollama endpoint with a list of tools. The model returns ONE
+   tool call (e.g. `type(id=2, "jane@…")`).
+3. **Execute** — the loop maps the tool call onto `BrowserController`, which acts
+   through the seven required low-level tools. The textual result is fed back.
+4. Repeat until the model calls `finish`, or `MAX_STEPS` is hit.
+
+Every transition is emitted as an event (`observation`, `thought`, `action`,
+`final`) into a `RunStore`, which fans them out to the frontend over SSE.
+
+## Why text Set-of-Marks (not vision)
+
+BrowserMind streams screenshots to a vision model. `qwen3-coder` is a text/code
+model with strong tool-calling but no image input, so the model reasons over a
+**textual** Set-of-Marks (`[id] <tag> label`). The screenshot (with the same marks
+drawn on it) is streamed only to the human dashboard. This plays to the model's
+strengths and is how many DOM/accessibility-tree browser agents work.
+
+## The seven required tools
+
+`BrowserController` exposes them and they do the real work:
+`open_browser`, `navigate_to_url`, `take_screenshot`, `click_on_screen(x,y)`,
+`send_keys`, `scroll`, `double_click`. The model never touches Playwright; its
+high-level actions resolve a mark id to coordinates and call these — e.g.
+`click(id)` → look up the mark's center → `click_on_screen(x,y)`;
+`type(id,text)` → click + select-all + `send_keys`.
 
 ## Components
 
-- `BrowserAgent`: owns the Playwright browser, context, page, and tool methods.
-- `config`: reads URL, browser mode, form values, and screenshot output settings from environment variables.
-- `Logger`: prints timestamped decisions and actions.
-- `index`: orchestrates the assignment workflow.
+- **frontend** (React + Vite): task input, live screenshot viewport, telemetry log;
+  subscribes to `/api/runs/:id/stream` (SSE).
+- **server** (Express): `POST /api/run`, SSE stream, stop, health; serves the built UI.
+- **RunStore**: in-memory runs, event history (for SSE replay), stop flag.
+- **agent/loop**: the ReAct orchestration.
+- **agent/tools + prompts**: the tool schemas and the system/observation prompts.
+- **browser/controller + setOfMarks**: Playwright control and in-page element marking.
+- **llm/ollamaClient**: Ollama Cloud via OpenAI-compatible API + native tool calling;
+  **mockClient/factory** provide a scripted offline mode for keyless demos.
 
-## Workflow
+## Key design decisions
 
-1. `open_browser` launches Chromium and creates a page.
-2. `navigate_to_url` opens the target URL and waits for the document to load.
-3. `take_screenshot` records the starting page state.
-4. `detectFormElements` inspects inputs, textareas, labels, placeholders, names, IDs, and bounding boxes.
-5. `fillTargetForm` fills Name and Description using accessible labels first, then placeholders and selectors, then coordinate fallback.
-6. `take_screenshot` records the final state.
-7. `close` shuts down browser resources.
+- **No hardcoding**: elements are discovered every step via Set-of-Marks; the agent
+  works on any site from a plain-English task.
+- **Set-of-Marks as a string**: the in-page routine is shipped as a string to
+  `page.evaluate`, so the tsx/esbuild `__name` keep-names helper is not injected into
+  browser code (which would throw `__name is not defined`).
+- **Coordinate-based actions**: clicks/typing go through `click_on_screen(x,y)` +
+  `send_keys`, satisfying the required tools and matching the visual Set-of-Marks model.
+- **Swappable LLM**: an `LlmClient` interface decouples the loop from any SDK, enabling
+  the deterministic mock used for offline tests.
+- **Error handling**: navigation/idle timeouts are caught; a failed tool returns an
+  error string the model can react to; stale mark ids raise a clear "re-observe" error;
+  `MAX_STEPS` bounds runaway loops.
 
-## Element Detection Strategy
+## Request flow
 
-The agent uses a layered strategy:
-
-1. Accessible labels such as `Name` and `Description`.
-2. Placeholder text.
-3. Attribute selectors such as `name`.
-4. Generic input/textarea fallback.
-5. Visual coordinate fallback using element bounding boxes.
-
-This is more robust than hard-coding one CSS selector and demonstrates basic agent decision-making.
-
-## Why Playwright
-
-Playwright is recommended by the assignment, supports reliable browser control, and provides high-level locators plus low-level mouse and keyboard APIs. That lets the project satisfy both intelligent element detection and the required screen-coordinate tools.
+```
+UI "Run" → POST /api/run → RunStore.create → runAgent(...) (async)
+        → loop emits events → RunStore.emit → SSE → UI updates live
+UI "Stop" → POST /api/runs/:id/stop → loop checks shouldStop() between steps
+```

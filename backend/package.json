@@ -1,0 +1,29 @@
+{
+  "name": "browser-mind-backend",
+  "version": "1.0.0",
+  "description": "AI browser automation agent backend (Ollama Cloud qwen3-coder, ReAct loop, Set-of-Marks).",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "install:browsers": "playwright install chromium",
+    "mock": "tsx src/agent/mockRun.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.1.0",
+    "openai": "^4.104.0",
+    "playwright": "^1.61.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

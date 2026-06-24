@@ -1,0 +1,13 @@
+{
+  "name": "local sample contact form",
+  "url": "file:///c:/Users/lostdecimal27/projects/website-automation-agent/tasks/fixtures/sample-form.html",
+  "fields": [
+    { "match": "full name", "value": "Jane Doe" },
+    { "match": "email", "value": "jane@example.com" },
+    { "match": "phone", "value": "+15551234567" },
+    { "match": "country", "value": "India" },
+    { "match": "subscribe", "value": "true" },
+    { "match": "message comments", "value": "Hello from the automation agent." }
+  ],
+  "submit": false
+}

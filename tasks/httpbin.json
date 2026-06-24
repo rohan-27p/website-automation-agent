@@ -1,0 +1,11 @@
+{
+  "name": "httpbin pizza order form",
+  "url": "https://httpbin.org/forms/post",
+  "fields": [
+    { "match": "customer name", "value": "Jane Doe" },
+    { "match": "telephone phone", "value": "+15551234567" },
+    { "match": "email", "value": "jane@example.com" },
+    { "match": "comments", "value": "Please ring the bell on arrival." }
+  ],
+  "submit": false
+}

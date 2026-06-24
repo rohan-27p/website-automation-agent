@@ -3,9 +3,15 @@
   "version": "1.0.0",
   "description": "Mini website automation agent for filling forms with Playwright.",
   "main": "dist/index.js",
+  "bin": {
+    "web-agent": "dist/cli.js"
+  },
   "scripts": {
-    "start": "tsx src/index.ts",
-    "demo": "tsx src/index.ts",
+    "agent": "tsx src/cli.ts",
+    "start": "tsx src/cli.ts",
+    "demo": "tsx src/cli.ts demo",
+    "inspect": "tsx src/cli.ts inspect",
+    "tools": "tsx src/cli.ts tools",
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
     "install:browsers": "npx playwright install chromium"

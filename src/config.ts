@@ -1,12 +1,15 @@
 import "dotenv/config";
 
+// Only generic, site-agnostic settings live here. What to fill on which site is
+// described per-task (see src/task.ts and the tasks/ folder), not hardcoded.
 export type AgentConfig = {
   headless: boolean;
   slowMoMs: number;
-  targetUrl: string;
-  formName: string;
-  formDescription: string;
   screenshotDir: string;
+  /** Optional fallback URL when no --task/--url is provided. */
+  defaultUrl?: string;
+  /** Optional default task file when no CLI args are provided. */
+  defaultTaskFile?: string;
 };
 
 function readBoolean(value: string | undefined, fallback: boolean): boolean {
@@ -23,12 +26,7 @@ function readNumber(value: string | undefined, fallback: number): number {
 export const config: AgentConfig = {
   headless: readBoolean(process.env.BROWSER_HEADLESS, false),
   slowMoMs: readNumber(process.env.BROWSER_SLOW_MO_MS, 150),
-  targetUrl:
-    process.env.TARGET_URL ??
-    "https://ui.shadcn.com/docs/forms/react-hook-form",
-  formName: process.env.FORM_NAME ?? "Assignment Demo Agent",
-  formDescription:
-    process.env.FORM_DESCRIPTION ??
-    "This text was entered automatically by the website automation agent.",
   screenshotDir: process.env.SCREENSHOT_DIR ?? "screenshots",
+  defaultUrl: process.env.TARGET_URL,
+  defaultTaskFile: process.env.TASK_FILE,
 };

@@ -1,0 +1,9 @@
+{
+  "name": "shadcn react-hook-form demo (assignment target)",
+  "url": "https://ui.shadcn.com/docs/forms/react-hook-form",
+  "fields": [
+    { "match": "username", "value": "Automation Agent" },
+    { "match": "description", "value": "Filled automatically by the website automation agent." }
+  ],
+  "submit": false
+}
